@@ -34,6 +34,8 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from tensorflow import keras
 from tensorflow.keras import layers
 
+from graficos_previsoes import gerar_graficos_previsoes
+
 CAMINHO_DADOS = "serie_precipitacao_com_desastres_enso_era5.csv"
 
 SEPARADOR_CSV = ";"
@@ -440,6 +442,10 @@ SEMENTE = 42
 
 # Pasta onde serão salvos o modelo, os gráficos e as tabelas de resultados.
 PASTA_SAIDA = "resultados_sc"
+
+# Pasta dos gráficos em PNG que vão para a documentação do repositório
+# (previsões do teste, treinamento e análise por fase do ENSO).
+PASTA_GRAFICOS = os.path.join("docs", "analises", "graficos")
 
 # Pasta onde fica salva toda a saída do terminal de cada execução. Cada vez que
 # o script roda, cria um arquivo novo com data e hora no nome
@@ -863,10 +869,11 @@ def analisar_desastres_por_fase(df, fim_treino, fim_val):
     ax.set_ylabel("% dos município-dias")
     ax.legend()
     plt.tight_layout()
-    caminho = os.path.join(PASTA_SAIDA, "desastres_por_fase_enso.png")
+    os.makedirs(PASTA_GRAFICOS, exist_ok=True)
+    caminho = os.path.join(PASTA_GRAFICOS, "analise_desastres_por_fase_enso.png")
     plt.savefig(caminho, dpi=120)
     plt.close(fig)
-    print(f"Tabela e gráfico salvos em {PASTA_SAIDA}/desastres_por_fase_enso.*")
+    print(f"Tabela salva em {PASTA_SAIDA}/desastres_por_fase_enso.csv e gráfico em {caminho}")
 
 
 def adicionar_risco_historico_fase(df, fim_treino):
@@ -1530,7 +1537,8 @@ def salvar_graficos(historico, previsoes_teste, estado_teste, limiar_estado):
     ax.legend(loc="lower left")
 
     plt.tight_layout()
-    caminho = os.path.join(PASTA_SAIDA, "graficos.png")
+    os.makedirs(PASTA_GRAFICOS, exist_ok=True)
+    caminho = os.path.join(PASTA_GRAFICOS, "00_treinamento_e_previsao_estadual.png")
     plt.savefig(caminho, dpi=120)
     print(f"Gráficos salvos em {caminho}")
 
@@ -1738,6 +1746,7 @@ def main():
     por_municipio.to_csv(os.path.join(PASTA_SAIDA, "metricas_por_municipio.csv"), index=False)
     estado_teste.to_csv(os.path.join(PASTA_SAIDA, "previsoes_estado_teste.csv"), index=False)
     salvar_graficos(historico, prev_teste, estado_teste, None if LIMIAR_ESTADO_ADAPTATIVO else limiar_est)
+    gerar_graficos_previsoes(prev_teste, estado_teste, PASTA_GRAFICOS, NOMES_NIVEIS_RISCO, COMUNICADO_POR_NIVEL)
     modelo.save(os.path.join(PASTA_SAIDA, "modelo_lstm_sc.keras"))
     print(f"Tabelas e modelo salvos em {PASTA_SAIDA}/")
 

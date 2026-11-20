@@ -124,6 +124,13 @@ def iniciar_registro():
     return caminho, arquivo
 
 
+
+def pasta_graficos():
+    """Os gráficos vão para a documentação (docs/analises/graficos); as tabelas, para PASTA_RESULTADOS."""
+    os.makedirs(m.PASTA_GRAFICOS, exist_ok=True)
+    return m.PASTA_GRAFICOS
+
+
 def titulo(texto):
     print(f"\n{'=' * 70}\n{texto}\n{'=' * 70}")
 
@@ -280,7 +287,7 @@ def grafico_faixas(faixas, resultado):
         ax.set_ylabel("% de dias com desastre")
         ax.legend(fontsize=8)
     plt.tight_layout()
-    plt.savefig(os.path.join(PASTA_RESULTADOS, "etapa1_taxa_por_faixa.png"), dpi=120)
+    plt.savefig(os.path.join(pasta_graficos(), "analise_limiares_taxa_por_faixa.png"), dpi=120)
     plt.close(fig)
 
 
@@ -413,7 +420,7 @@ def comparar_correlacoes(treino, variaveis):
         ax.set_yticklabels(variaveis, fontsize=7)
         ax.set_title(f"Correlação de Spearman - {nome} (suspeitos, treino)")
     fig.colorbar(imagem, ax=eixos, shrink=0.7)
-    plt.savefig(os.path.join(PASTA_RESULTADOS, "etapa2_correlacoes.png"), dpi=120, bbox_inches="tight")
+    plt.savefig(os.path.join(pasta_graficos(), "analise_limiares_correlacoes.png"), dpi=120, bbox_inches="tight")
     plt.close(fig)
 
 
