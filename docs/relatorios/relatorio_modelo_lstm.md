@@ -20,7 +20,6 @@ O modelo funciona, mas tem limites claros. A maior parte do acerto vem de saber 
 10. [Explicação dos gráficos](#10-explicação-dos-gráficos)
 11. [O que mais descobrimos sobre os desastres](#11-o-que-mais-descobrimos-sobre-os-desastres)
 12. [Limitações e próximos passos](#12-limitações-e-próximos-passos)
-13. [Referências](#13-referências)
 
 ---
 
