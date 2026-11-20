@@ -35,6 +35,18 @@ Modelo preditivo de desastres para os 293 municípios de Santa Catarina. Uma red
 
 O relatório completo, com a explicação do modelo, dos alertas, dos parâmetros ajustados, das análises estatísticas e de todos os gráficos, está em [`docs/relatorios/relatorio_modelo_lstm.md`](docs/relatorios/relatorio_modelo_lstm.md).
 
+## Mapa interativo
+
+O site **https://pcbassani.github.io/modelo-lstm-desastres-sc/** mostra as previsões no mapa de Santa Catarina (malha municipal do IBGE, 2025):
+
+- cada município colorido pelo comunicado (observação, aviso ou alerta) da data escolhida;
+- uma barra de datas e um botão para reproduzir os dias em sequência (2021–2024);
+- ao clicar num município: comunicado, nível de risco, se houve desastre registrado e o risco dos últimos 90 dias;
+- o modo "acertos e erros", que mostra onde o alerta acertou, onde deu alarme falso e onde perdeu um desastre;
+- o alerta estadual do dia e o desempenho geral do modelo.
+
+O mapa mostra as previsões já feitas para o período de teste, não previsões para hoje.
+
 ## Estrutura do repositório
 
 ```
@@ -44,11 +56,15 @@ O relatório completo, com a explicação do modelo, dos alertas, dos parâmetro
 │   ├── modelo/
 │   │   ├── modelo_lstm_desastres.py   # o modelo: treino, previsão, níveis de risco e comunicados
 │   │   └── graficos_previsoes.py      # gráficos das previsões (gerados a cada execução)
-│   └── analises/
-│       ├── analises_limiares.py       # limiares de chuva a partir dos quais o risco dobra
-│       ├── importancia_variaveis.py   # testes estatísticos de importância das variáveis
-│       └── climatologia.py            # calendário de risco por município e mês
+│   ├── analises/
+│   │   ├── analises_limiares.py       # limiares de chuva a partir dos quais o risco dobra
+│   │   ├── importancia_variaveis.py   # testes estatísticos de importância das variáveis
+│   │   └── climatologia.py            # calendário de risco por município e mês
+│   └── interface/
+│       └── gerar_site.py              # gera os dados do mapa interativo
 └── docs/
+    ├── index.html                     # o mapa interativo (página do GitHub Pages)
+    ├── site/                          # contornos dos municípios e previsões usados pelo mapa
     ├── analises/
     │   └── graficos/                  # gráficos em PNG das previsões e das análises
     └── relatorios/
@@ -100,6 +116,12 @@ python3 src/modelo/graficos_previsoes.py
 ```
 
 Refaz os gráficos a partir das previsões já salvas, sem treinar de novo.
+
+```bash
+python3 src/interface/gerar_site.py
+```
+
+Atualiza os dados do mapa interativo (`docs/site/`) com as previsões salvas. Precisa do shapefile do IBGE (`SC_Municipios_2025.shp`); o caminho fica no parâmetro `CAMINHO_SHAPEFILE`, no topo do script. Para ver o mapa no próprio computador, rode `python3 -m http.server --directory docs` e abra http://localhost:8000.
 
 ```bash
 python3 src/analises/analises_limiares.py

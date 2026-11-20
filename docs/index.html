@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Risco de Desastres SC</title>
+<meta name="description" content="Mapa interativo das previsões de um modelo LSTM de desastres para os municípios de Santa Catarina (2021-2024).">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root {
+    --fundo: #f6f7f9; --painel: #ffffff; --texto: #1f2933; --texto-suave: #5f6b7a; --borda: #e2e6ea;
+    --observacao: #d4d9de; --aviso: #f2b447; --alerta: #e45756; --sem-dado: #f1f3f5;
+    --vp: #1a9850; --fn: #c62828; --fp: #f4a261; --vn: #e9ecef; --destaque: #2563eb;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+         background: var(--fundo); color: var(--texto); }
+  header { padding: 14px 20px; background: var(--painel); border-bottom: 1px solid var(--borda); }
+  header h1 { margin: 0; font-size: 20px; }
+  header p { margin: 4px 0 0; color: var(--texto-suave); font-size: 14px; }
+  header a { color: var(--destaque); }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 0; height: calc(100vh - 74px); }
+  #mapa { height: 100%; background: #dfe7ef; }
+  aside { background: var(--painel); border-left: 1px solid var(--borda); overflow-y: auto; padding: 16px; }
+  .bloco { margin-bottom: 18px; }
+  .bloco h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--texto-suave); margin: 0 0 8px; }
+  .data-atual { font-size: 22px; font-weight: 600; }
+  .controles { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+  .controles button, .modo button { border: 1px solid var(--borda); background: #fff; border-radius: 6px;
+                                    padding: 6px 10px; cursor: pointer; font-size: 14px; color: var(--texto); }
+  .controles button:hover, .modo button:hover { border-color: var(--destaque); }
+  input[type=range] { width: 100%; margin-top: 10px; }
+  .modo { display: flex; gap: 6px; }
+  .modo button.ativo { background: var(--destaque); color: #fff; border-color: var(--destaque); }
+  .legenda div { display: flex; align-items: center; gap: 8px; font-size: 14px; margin: 4px 0; }
+  .cor { width: 16px; height: 16px; border-radius: 3px; border: 1px solid rgba(0,0,0,.15); flex: none; }
+  .estado { border: 1px solid var(--borda); border-radius: 8px; padding: 10px 12px; }
+  .selo { display: inline-block; padding: 2px 10px; border-radius: 999px; font-weight: 600; font-size: 14px; }
+  .linha { display: flex; justify-content: space-between; font-size: 14px; margin: 4px 0; }
+  .linha span:last-child { font-weight: 600; }
+  table.metricas { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.metricas th, table.metricas td { text-align: right; padding: 4px 2px; border-bottom: 1px solid var(--borda); }
+  table.metricas th:first-child, table.metricas td:first-child { text-align: left; }
+  .nota { font-size: 12px; color: var(--texto-suave); line-height: 1.45; }
+  .leaflet-popup-content { margin: 12px 14px; font-size: 13px; }
+  .popup h3 { margin: 0 0 4px; font-size: 15px; }
+  .popup .regiao { color: var(--texto-suave); margin-bottom: 6px; }
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; height: auto; }
+    #mapa { height: 62vh; }
+    aside { border-left: 0; border-top: 1px solid var(--borda); }
+    header { padding: 12px 16px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Risco de desastres em Santa Catarina</h1>
+  <p>Previsões de um modelo LSTM para os próximos 3 dias, no período de teste (2021–2024). Escolha uma data e clique num município.
+     <a href="https://github.com/pcbassani/modelo-lstm-desastres-sc/blob/main/docs/relatorios/relatorio_modelo_lstm.md">Como o modelo funciona</a></p>
+</header>
+<div class="layout">
+  <div id="mapa" role="region" aria-label="Mapa dos municípios de Santa Catarina"></div>
+  <aside>
+    <div class="bloco">
+      <h2>Data</h2>
+      <div class="data-atual" id="data-atual">–</div>
+      <input type="range" id="slider" min="0" max="0" value="0" aria-label="Escolher a data">
+      <div class="controles">
+        <button id="anterior" title="Dia anterior">◀</button>
+        <button id="tocar" title="Passar os dias automaticamente">▶ Reproduzir</button>
+        <button id="proximo" title="Próximo dia">▶</button>
+      </div>
+    </div>
+
+    <div class="bloco">
+      <h2>Ver no mapa</h2>
+      <div class="modo">
+        <button id="modo-comunicado" class="ativo">Comunicados</button>
+        <button id="modo-conferencia">Acertos e erros</button>
+      </div>
+    </div>
+
+    <div class="bloco legenda" id="legenda"></div>
+
+    <div class="bloco">
+      <h2>Estado (10+ municípios atingidos)</h2>
+      <div class="estado" id="estado"></div>
+    </div>
+
+    <div class="bloco">
+      <h2>Municípios nesta data</h2>
+      <div id="contagem"></div>
+    </div>
+
+    <div class="bloco">
+      <h2>Desempenho do alerta no teste</h2>
+      <table class="metricas" id="metricas"></table>
+      <p class="nota">No mapa municipal, "alerta" são os níveis alto e muito alto; o alerta estadual usa o limiar
+        escolhido na validação. Sensibilidade: desastres que tiveram alerta antes. Especificidade: dias sem desastre reconhecidos
+        como tranquilos. Precisão: alertas que se confirmaram.</p>
+    </div>
+
+    <div class="bloco nota">
+      <strong>Como ler.</strong> O comunicado de cada município vem da comparação da previsão do dia com as previsões do
+      último ano: observação (metade de menor risco), aviso (até os 20% de maior risco) e alerta (os 20% de maior risco).
+      "Desastre registrado" indica se a planilha de dados mostrou pelo menos 1 desastre nos 3 dias seguintes.
+      O mapa mostra previsões já feitas para 2021–2024, não previsões para hoje.
+      Malha municipal: IBGE, 2025.
+    </div>
+  </aside>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="site/mapa.js"></script>
+<script src="site/previsoes.js"></script>
+<script>
+(function () {
+  const P = window.PREVISOES, MAPA = window.MAPA_SC;
+  const NIVEIS = ["baixo", "médio", "alto", "muito alto"];
+  const COMUNICADO = ["observação", "aviso", "alerta", "alerta"];
+  const css = getComputedStyle(document.documentElement);
+  const cor = nome => css.getPropertyValue("--" + nome).trim();
+  const CORES_COMUNICADO = { "observação": cor("observacao"), "aviso": cor("aviso"), "alerta": cor("alerta") };
+  const CONFERENCIA = {
+    vp: { cor: cor("vp"), nome: "Alerta e houve desastre (acerto)" },
+    fn: { cor: cor("fn"), nome: "Sem alerta e houve desastre (perdido)" },
+    fp: { cor: cor("fp"), nome: "Alerta sem desastre (alarme falso)" },
+    vn: { cor: cor("vn"), nome: "Sem alerta e sem desastre (acerto)" }
+  };
+
+  let dia = P.datas.length - 1, modo = "comunicado", tocando = null, selecionado = null;
+
+  const formatarData = iso => iso.slice(8, 10) + "/" + iso.slice(5, 7) + "/" + iso.slice(0, 4);
+  const infoMunicipio = (chave, i) => {
+    const m = chave && P.municipios[chave];
+    if (!m || m.nivel[i] === "-") return null;
+    const nivel = +m.nivel[i];
+    return { nivel, comunicado: COMUNICADO[nivel], evento: m.evento[i] === "1", pct: +m.pct.substr(2 * i, 2) };
+  };
+  const situacao = info => {
+    const alerta = info.nivel >= 2;
+    return alerta ? (info.evento ? "vp" : "fp") : (info.evento ? "fn" : "vn");
+  };
+
+  // ---------- mapa ----------
+  const mapa = L.map("mapa", { zoomSnap: 0.25, minZoom: 6, maxZoom: 11 });
+  mapa.attributionControl.addAttribution("Malha municipal: IBGE, 2025");
+
+  const camada = L.geoJSON(MAPA, {
+    style: estilo,
+    onEachFeature: (feature, layer) => {
+      layer.bindTooltip(feature.properties.nome, { sticky: true });
+      layer.on("click", () => { selecionado = layer; abrirPopup(layer); });
+      layer.on("mouseover", () => layer.setStyle({ weight: 2, color: "#1f2933" }));
+      layer.on("mouseout", () => camada.resetStyle(layer));
+    }
+  }).addTo(mapa);
+  mapa.fitBounds(camada.getBounds(), { padding: [10, 10] });
+
+  function estilo(feature) {
+    const info = infoMunicipio(feature.properties.chave, dia);
+    let preenchimento = cor("sem-dado");
+    if (info) preenchimento = modo === "comunicado" ? CORES_COMUNICADO[info.comunicado] : CONFERENCIA[situacao(info)].cor;
+    return { fillColor: preenchimento, fillOpacity: 0.9, color: "#ffffff", weight: 0.6 };
+  }
+
+  function abrirPopup(layer) {
+    const p = layer.feature.properties;
+    const info = infoMunicipio(p.chave, dia);
+    let html = `<div class="popup"><h3>${p.nome}</h3><div class="regiao">Região de ${p.regiao}</div>`;
+    if (!info) {
+      html += "Sem previsão para este município (não está na planilha de dados).</div>";
+    } else {
+      const corSelo = CORES_COMUNICADO[info.comunicado];
+      html += `<div class="linha"><span>Comunicado</span><span class="selo" style="background:${corSelo}">${info.comunicado}</span></div>
+        <div class="linha"><span>Nível de risco</span><span>${NIVEIS[info.nivel]}</span></div>
+        <div class="linha"><span>Previsão acima de</span><span>${info.pct}% do último ano</span></div>
+        <div class="linha"><span>Desastre registrado (3 dias)</span><span>${info.evento ? "sim" : "não"}</span></div>
+        ${grafico(p.chave)}</div>`;
+    }
+    layer.bindPopup(html, { maxWidth: 300 }).openPopup();
+  }
+
+  function grafico(chave) {
+    const m = P.municipios[chave], largura = 260, altura = 70, dias = 90;
+    const inicio = Math.max(0, dia - dias + 1), pontos = [], eventos = [];
+    for (let i = inicio; i <= dia; i++) {
+      if (m.nivel[i] === "-") continue;
+      const x = ((i - inicio) / (dias - 1)) * largura, y = altura - (+m.pct.substr(2 * i, 2) / 100) * altura;
+      pontos.push(x.toFixed(1) + "," + y.toFixed(1));
+      if (m.evento[i] === "1") eventos.push(`<circle cx="${x.toFixed(1)}" cy="4" r="2.5" fill="${cor("fn")}"/>`);
+    }
+    const linha80 = altura - 0.8 * altura;
+    return `<div style="margin-top:8px;color:#5f6b7a">Risco nos últimos 90 dias (linha tracejada: início do alerta; pontos: desastre registrado)</div>
+      <svg width="${largura}" height="${altura}" viewBox="0 0 ${largura} ${altura}" role="img" aria-label="Risco nos últimos 90 dias">
+        <rect width="${largura}" height="${altura}" fill="#f8f9fb"/>
+        <line x1="0" x2="${largura}" y1="${linha80}" y2="${linha80}" stroke="${cor("alerta")}" stroke-dasharray="3 3"/>
+        <polyline points="${pontos.join(" ")}" fill="none" stroke="${cor("destaque")}" stroke-width="1.5"/>
+        ${eventos.join("")}
+      </svg>`;
+  }
+
+  // ---------- painel ----------
+  function atualizarLegenda() {
+    const itens = modo === "comunicado"
+      ? [["observação", "Observação (risco baixo)"], ["aviso", "Aviso (risco médio)"], ["alerta", "Alerta (risco alto ou muito alto)"]]
+          .map(([c, t]) => `<div><span class="cor" style="background:${CORES_COMUNICADO[c]}"></span>${t}</div>`)
+      : Object.values(CONFERENCIA).map(c => `<div><span class="cor" style="background:${c.cor}"></span>${c.nome}</div>`);
+    itens.push(`<div><span class="cor" style="background:${cor("sem-dado")}"></span>Sem previsão</div>`);
+    document.getElementById("legenda").innerHTML = "<h2>Legenda</h2>" + itens.join("");
+  }
+
+  function atualizarPainel() {
+    document.getElementById("data-atual").textContent = formatarData(P.datas[dia]);
+    document.getElementById("slider").value = dia;
+
+    const e = P.estado, alerta = e.alerta[dia];
+    const comunicado = alerta === "-" ? "–" : alerta === "1" ? "alerta" : "sem alerta";
+    const corSelo = alerta === "1" ? CORES_COMUNICADO["alerta"] : cor("observacao");
+    document.getElementById("estado").innerHTML = `
+      <div class="linha"><span>Alerta estadual</span><span class="selo" style="background:${corSelo}">${comunicado}</span></div>
+      <div class="linha"><span>Evento estadual (10+ municípios)</span><span>${e.evento[dia] === "1" ? "sim" : e.evento[dia] === "0" ? "não" : "–"}</span></div>
+      <div class="linha"><span>Municípios atingidos (real)</span><span>${e.atingidos[dia] ?? "–"}</span></div>
+      <div class="linha"><span>Municípios previstos</span><span>${e.previstos[dia] == null ? "–" : String(e.previstos[dia]).replace(".", ",")}</span></div>`;
+
+    const contagem = { "observação": 0, "aviso": 0, "alerta": 0 }, conf = { vp: 0, fn: 0, fp: 0, vn: 0 };
+    for (const chave in P.municipios) {
+      const info = infoMunicipio(chave, dia);
+      if (!info) continue;
+      contagem[info.comunicado]++;
+      conf[situacao(info)]++;
+    }
+    const linhas = modo === "comunicado"
+      ? Object.entries(contagem).map(([c, n]) => `<div class="linha"><span><span class="cor" style="display:inline-block;vertical-align:-3px;background:${CORES_COMUNICADO[c]}"></span> ${c}</span><span>${n}</span></div>`)
+      : Object.entries(conf).map(([k, n]) => `<div class="linha"><span><span class="cor" style="display:inline-block;vertical-align:-3px;background:${CONFERENCIA[k].cor}"></span> ${CONFERENCIA[k].nome}</span><span>${n}</span></div>`);
+    document.getElementById("contagem").innerHTML = linhas.join("");
+  }
+
+  function desenhar() {
+    camada.setStyle(estilo);
+    atualizarPainel();
+    if (selecionado && mapa.hasLayer(selecionado) && selecionado.isPopupOpen()) abrirPopup(selecionado);
+  }
+
+  const m = P.metricas;
+  document.getElementById("metricas").innerHTML = `
+    <tr><th></th><th>Municipal</th><th>Estadual</th></tr>
+    ${["sensibilidade", "especificidade", "acuracia", "precisao"].map(k =>
+      `<tr><td>${{ sensibilidade: "Sensibilidade", especificidade: "Especificidade", acuracia: "Acurácia", precisao: "Precisão" }[k]}</td>
+       <td>${m.municipal[k].toFixed(1).replace(".", ",")}%</td><td>${m.estadual[k].toFixed(1).replace(".", ",")}%</td></tr>`).join("")}`;
+
+  // ---------- controles ----------
+  const slider = document.getElementById("slider");
+  slider.max = P.datas.length - 1;
+  slider.addEventListener("input", () => { dia = +slider.value; desenhar(); });
+  document.getElementById("anterior").onclick = () => { dia = Math.max(0, dia - 1); desenhar(); };
+  document.getElementById("proximo").onclick = () => { dia = Math.min(P.datas.length - 1, dia + 1); desenhar(); };
+  const botaoTocar = document.getElementById("tocar");
+  botaoTocar.onclick = () => {
+    if (tocando) { clearInterval(tocando); tocando = null; botaoTocar.textContent = "▶ Reproduzir"; return; }
+    if (dia >= P.datas.length - 1) dia = 0;
+    botaoTocar.textContent = "❚❚ Pausar";
+    tocando = setInterval(() => {
+      if (dia >= P.datas.length - 1) { botaoTocar.click(); return; }
+      dia++; desenhar();
+    }, 180);
+  };
+  const botoesModo = { comunicado: document.getElementById("modo-comunicado"), conferencia: document.getElementById("modo-conferencia") };
+  Object.entries(botoesModo).forEach(([nome, botao]) => botao.onclick = () => {
+    modo = nome;
+    Object.values(botoesModo).forEach(b => b.classList.toggle("ativo", b === botao));
+    atualizarLegenda(); desenhar();
+  });
+
+  atualizarLegenda();
+  desenhar();
+})();
+</script>
+</body>
+</html>
