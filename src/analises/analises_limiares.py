@@ -24,7 +24,7 @@ analisado é o mesmo alvo do modelo: desastre em algum dos próximos
 HORIZONTE_PREVISAO dias.
 
 Para rodar:
-    /usr/bin/python3 src/analises/analise_limiares.py   (a partir da raiz do repositório)
+    /usr/bin/python3 src/analises/analises_limiares.py   (a partir da raiz do repositório)
 """
 
 import os
@@ -96,7 +96,7 @@ MINIMO_DIAS_FOLHA = 2000
 TAMANHO_AMOSTRA = 300_000
 
 # Pasta dos resultados (tabelas e gráficos).
-PASTA_RESULTADOS = os.path.join(m.PASTA_SAIDA, "analise_limiares")
+PASTA_RESULTADOS = os.path.join(m.PASTA_SAIDA, "analises_limiares")
 
 # #############################################################################
 # ##                         FIM DOS PARÂMETROS                              ##
@@ -287,7 +287,7 @@ def grafico_faixas(faixas, resultado):
         ax.set_ylabel("% de dias com desastre")
         ax.legend(fontsize=8)
     plt.tight_layout()
-    plt.savefig(os.path.join(pasta_graficos(), "analise_limiares_taxa_por_faixa.png"), dpi=120)
+    plt.savefig(os.path.join(pasta_graficos(), "analises_limiares_taxa_por_faixa.png"), dpi=120)
     plt.close(fig)
 
 
@@ -420,7 +420,7 @@ def comparar_correlacoes(treino, variaveis):
         ax.set_yticklabels(variaveis, fontsize=7)
         ax.set_title(f"Correlação de Spearman - {nome} (suspeitos, treino)")
     fig.colorbar(imagem, ax=eixos, shrink=0.7)
-    plt.savefig(os.path.join(pasta_graficos(), "analise_limiares_correlacoes.png"), dpi=120, bbox_inches="tight")
+    plt.savefig(os.path.join(pasta_graficos(), "analises_limiares_correlacoes.png"), dpi=120, bbox_inches="tight")
     plt.close(fig)
 
 

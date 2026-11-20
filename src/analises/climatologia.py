@@ -165,7 +165,7 @@ def salvar_mapa(clima, principais, nome, sufixo):
     ax.set_title(f"Risco relativo de {nome} por mês (1 = média do município; treino)")
     fig.colorbar(imagem, ax=ax, shrink=0.6, label="risco relativo")
     plt.tight_layout()
-    plt.savefig(os.path.join(pasta_graficos(), f"analise_climatologia_mapa_{sufixo}.png"), dpi=120)
+    plt.savefig(os.path.join(pasta_graficos(), f"analises_climatologia_mapa_{sufixo}.png"), dpi=120)
     plt.close(fig)
 
 
@@ -182,7 +182,7 @@ def salvar_perfil(perfis):
         ax.set_title(f"{nome.capitalize()} por mês em SC")
         ax.legend()
     plt.tight_layout()
-    plt.savefig(os.path.join(pasta_graficos(), "analise_climatologia_perfil_mensal_sc.png"), dpi=120)
+    plt.savefig(os.path.join(pasta_graficos(), "analises_climatologia_perfil_mensal_sc.png"), dpi=120)
     plt.close(fig)
 
 

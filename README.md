@@ -33,7 +33,7 @@ Modelo preditivo de desastres para os 293 municípios de Santa Catarina. Uma red
 | Municipal | 61,1% | 78,7% | 78,2% |
 | Estadual | 57,8% | 57,7% | 57,8% |
 
-A análise estatística completa e os gráficos estão em [`docs/analises`](docs/analises/README.md).
+O relatório completo, com a explicação do modelo, dos alertas, dos parâmetros ajustados, das análises estatísticas e de todos os gráficos, está em [`docs/relatorios/relatorio_modelo_lstm.md`](docs/relatorios/relatorio_modelo_lstm.md).
 
 ## Estrutura do repositório
 
@@ -45,14 +45,14 @@ A análise estatística completa e os gráficos estão em [`docs/analises`](docs
 │   │   ├── modelo_lstm_desastres.py   # o modelo: treino, previsão, níveis de risco e comunicados
 │   │   └── graficos_previsoes.py      # gráficos das previsões (gerados a cada execução)
 │   └── analises/
-│       ├── analise_limiares.py        # limiares de chuva a partir dos quais o risco dobra
+│       ├── analises_limiares.py       # limiares de chuva a partir dos quais o risco dobra
 │       ├── importancia_variaveis.py   # testes estatísticos de importância das variáveis
 │       └── climatologia.py            # calendário de risco por município e mês
 └── docs/
     ├── analises/
-    │   ├── README.md                  # análise estatística do modelo atual
     │   └── graficos/                  # gráficos em PNG das previsões e das análises
-    └── relatorios/                    # relatórios do trabalho
+    └── relatorios/
+        └── relatorio_modelo_lstm.md   # relatório do trabalho
 ```
 
 ## Como rodar na máquina local
@@ -102,7 +102,7 @@ python3 src/modelo/graficos_previsoes.py
 Refaz os gráficos a partir das previsões já salvas, sem treinar de novo.
 
 ```bash
-python3 src/analises/analise_limiares.py
+python3 src/analises/analises_limiares.py
 ```
 
 ```bash

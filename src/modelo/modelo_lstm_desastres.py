@@ -84,7 +84,7 @@ TIPO_LIMIAR_CHUVA = "percentil_municipio"
 PERCENTIL_CHUVA_EXTREMA = 0.95
 
 # Limiar em mm usado em "absoluto". 46 mm em 3 dias foi o valor a partir do qual
-# o risco de desastre dobra na análise de limiares (analise_limiares.py).
+# o risco de desastre dobra na análise de limiares (analises_limiares.py).
 LIMIAR_CHUVA_MM = 46.0
 
 # Se True, o modelo prevê só o INÍCIO de cada evento. Muitos desastres ficam
@@ -449,7 +449,7 @@ PASTA_GRAFICOS = os.path.join("docs", "analises", "graficos")
 
 # Pasta onde fica salva toda a saída do terminal de cada execução. Cada vez que
 # o script roda, cria um arquivo novo com data e hora no nome
-# (ex.: analise_2026-10-30_10-15-02.txt), com os parâmetros usados no topo.
+# (ex.: analises_2026-10-30_10-15-02.txt), com os parâmetros usados no topo.
 # Assim dá para comparar execuções antigas sem perder nenhum resultado.
 PASTA_ANALISES = "analises_anteriores"
 
@@ -490,7 +490,7 @@ def iniciar_registro():
     """Passa a copiar tudo o que aparece no terminal para um arquivo novo."""
     os.makedirs(PASTA_ANALISES, exist_ok=True)
     agora = datetime.now()
-    caminho = os.path.join(PASTA_ANALISES, f"analise_{agora:%Y-%m-%d_%H-%M-%S}.txt")
+    caminho = os.path.join(PASTA_ANALISES, f"analises_{agora:%Y-%m-%d_%H-%M-%S}.txt")
     arquivo = open(caminho, "w", encoding="utf-8")
     sys.stdout = Duplicador(sys.__stdout__, arquivo)
     sys.stderr = Duplicador(sys.__stderr__, arquivo)
@@ -870,7 +870,7 @@ def analisar_desastres_por_fase(df, fim_treino, fim_val):
     ax.legend()
     plt.tight_layout()
     os.makedirs(PASTA_GRAFICOS, exist_ok=True)
-    caminho = os.path.join(PASTA_GRAFICOS, "analise_desastres_por_fase_enso.png")
+    caminho = os.path.join(PASTA_GRAFICOS, "analises_desastres_por_fase_enso.png")
     plt.savefig(caminho, dpi=120)
     plt.close(fig)
     print(f"Tabela salva em {PASTA_SAIDA}/desastres_por_fase_enso.csv e gráfico em {caminho}")
