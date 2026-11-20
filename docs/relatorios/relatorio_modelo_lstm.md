@@ -10,16 +10,17 @@ O modelo funciona, mas tem limites claros. A maior parte do acerto vem de saber 
 
 1. [Objetivo](#1-objetivo)
 2. [Os dados](#2-os-dados)
-3. [O que é o modelo](#3-o-que-é-o-modelo)
-4. [Como o modelo funciona, passo a passo](#4-como-o-modelo-funciona-passo-a-passo)
-5. [Como medimos se o modelo é bom](#5-como-medimos-se-o-modelo-é-bom)
-6. [Resultados: acurácia, precisão e as outras medidas](#6-resultados-acurácia-precisão-e-as-outras-medidas)
-7. [Como funcionam os alertas](#7-como-funcionam-os-alertas)
-8. [Parâmetros que ajustamos e o que cada um trouxe](#8-parâmetros-que-ajustamos-e-o-que-cada-um-trouxe)
-9. [Explicação dos gráficos](#9-explicação-dos-gráficos)
-10. [O que mais descobrimos sobre os desastres](#10-o-que-mais-descobrimos-sobre-os-desastres)
-11. [Limitações e próximos passos](#11-limitações-e-próximos-passos)
-12. [Referências](#12-referências)
+3. [De onde vêm os eventos e os alertas](#3-de-onde-vêm-os-eventos-e-os-alertas)
+4. [O que é o modelo](#4-o-que-é-o-modelo)
+5. [Como o modelo funciona, passo a passo](#5-como-o-modelo-funciona-passo-a-passo)
+6. [Como medimos se o modelo é bom](#6-como-medimos-se-o-modelo-é-bom)
+7. [Resultados: acurácia, precisão e as outras medidas](#7-resultados-acurácia-precisão-e-as-outras-medidas)
+8. [Como funcionam os alertas](#8-como-funcionam-os-alertas)
+9. [Parâmetros que ajustamos e o que cada um trouxe](#9-parâmetros-que-ajustamos-e-o-que-cada-um-trouxe)
+10. [Explicação dos gráficos](#10-explicação-dos-gráficos)
+11. [O que mais descobrimos sobre os desastres](#11-o-que-mais-descobrimos-sobre-os-desastres)
+12. [Limitações e próximos passos](#12-limitações-e-próximos-passos)
+13. [Referências](#13-referências)
 
 ---
 
@@ -41,11 +42,87 @@ Criar um modelo preditivo de desastres para Santa Catarina que acerte **pelo men
 | Desastres | Quantidade de desastres registrados por município e dia |
 | El Niño | Índice ONI oficial da NOAA/CPC, baixado pelo próprio programa |
 
-**O que conta como "evento":** um dia em que houve pelo menos 1 registro de desastre no município. Como o modelo prevê os próximos 3 dias, a pergunta que ele responde é: *"vai haver registro de desastre em algum dos próximos 3 dias?"*
-
 **Desastres são raros.** Só cerca de 3% dos dias de cada município têm desastre no período de teste. Isso torna a previsão difícil e, como veremos, muda a forma de medir se o modelo é bom.
 
-## 3. O que é o modelo
+## 3. De onde vêm os eventos e os alertas
+
+Ao longo do relatório, duas palavras aparecem o tempo todo: **evento** e **alerta**. Elas têm origens diferentes:
+
+| | De onde vem | O que é |
+| --- | --- | --- |
+| **Evento** | Da planilha de dados (coluna `Desastres`) | O que **realmente aconteceu**: houve ou não desastre registrado |
+| **Alerta** | Do modelo | O que o modelo **previu**: se a chance de desastre é alta |
+
+### O evento vem da coluna `Desastres`
+
+A planilha tem uma coluna chamada `Desastres`, com a **quantidade de desastres registrados** em cada município em cada dia. É uma contagem: 0 quer dizer que não houve registro; 1, que houve 1 desastre; 3, que houve 3 desastres naquele município naquele dia.
+
+Nos dados de 2000 a 2024, foram **15.761 desastres** registrados em **11.824 dias**:
+
+| Desastres no mesmo dia e município | Quantidade de dias | % dos dias com registro |
+| --- | --- | --- |
+| 1 | 9.560 | 80,9% |
+| 2 | 1.462 | 12,4% |
+| 3 | 452 | 3,8% |
+| 4 | 145 | 1,2% |
+| 5 ou mais (máximo de 15) | 205 | 1,7% |
+
+**A regra usada pelo modelo:** um dia com **pelo menos 1 desastre** é um dia **com evento**. Assim, a contagem vira um "sim ou não":
+
+| Valor da coluna `Desastres` | Para o modelo |
+| --- | --- |
+| 0 | Sem evento |
+| 1, 2, 3 ou mais | Com evento |
+
+Isso quer dizer que, hoje, um dia com 1 desastre e um dia com 15 desastres contam do mesmo jeito: os dois são "com evento". A quantidade em si não entra na previsão. O parâmetro `LIMIAR_DESASTRES` permite mudar essa regra; por exemplo, com o valor 2, só dias com 2 ou mais desastres contariam como evento.
+
+Como o modelo prevê os **próximos 3 dias**, a pergunta que ele responde é: *"vai haver pelo menos 1 desastre registrado neste município em algum dos próximos 3 dias?"*
+
+Exemplo com linhas no formato da planilha:
+
+| Município | Data | Chuva (mm) | Desastres | Evento? |
+| --- | --- | --- | --- | --- |
+| Blumenau | 10/01/2023 | 3 | 0 | não |
+| Blumenau | 11/01/2023 | 85 | 2 | **sim** (2 desastres) |
+| Blumenau | 12/01/2023 | 40 | 1 | **sim** (1 desastre) |
+
+*(Linhas ilustrativas, só para mostrar o formato; não são valores reais da planilha.)*
+
+### O modelo nunca "vê a resposta"
+
+A coluna `Desastres` **não é usada como entrada** do modelo. O modelo recebe só o clima (chuva, vento, radiação), a localização, a época do ano e o El Niño. A coluna `Desastres` é usada apenas para:
+
+- **ensinar (treino, 2000 a 2016):** mostrar ao modelo como estava o clima nos dias que antecederam os desastres;
+- **conferir (teste, 2021 a 2024):** comparar o que o modelo previu com o que de fato aconteceu.
+
+### O alerta é criado pelo modelo
+
+O alerta **não existe na planilha**. A cada dia, o modelo calcula a chance de desastre nos próximos 3 dias e, se essa chance estiver entre as mais altas do último ano, emite um alerta. A seção 8 explica as regras em detalhe.
+
+### Onde os dois se encontram
+
+A avaliação do modelo é justamente a comparação entre os dois:
+
+| | O modelo não alertou | O modelo alertou |
+| --- | --- | --- |
+| **A planilha mostra 0 desastres** | Acerto | Alarme falso |
+| **A planilha mostra 1 ou mais desastres** | Desastre perdido | **Desastre detectado** |
+
+Quando dizemos que o modelo **detectou 61% dos desastres**, isso significa: *dos dias em que a coluna `Desastres` mostrou pelo menos 1 registro, em 61% deles o modelo já tinha emitido alerta.*
+
+### Um cuidado: "registrado" não é o mesmo que "aconteceu"
+
+A coluna `Desastres` mostra o que foi **registrado oficialmente**. Isso tem três consequências:
+
+- desastres pequenos podem não ter sido registrados;
+- o registro pode ter sido feito alguns dias depois do evento, o que ajuda a explicar por que prever "nos próximos 3 dias" funcionou melhor que prever "amanhã";
+- a coluna mistura tipos diferentes de desastre, como enchentes (causadas por excesso de chuva) e estiagens (causadas por falta de chuva).
+
+### E o que é "chuva extrema"?
+
+Em um dos testes (seção 9, etapa 10), também usamos o termo **chuva extrema**. Ela **não vem da coluna `Desastres`**: nós a calculamos a partir da coluna de chuva, como os 5% de períodos de 3 dias mais chuvosos de cada município. Esse teste foi descartado do modelo final, mas mostrou um resultado útil: quando a chuva extrema acontece, a chance de desastre registrado fica **6,7 vezes maior**.
+
+## 4. O que é o modelo
 
 ### O que é uma LSTM
 
@@ -78,7 +155,7 @@ O modelo tem duas entradas:
 
 Essa separação segue uma ideia usada em modelos de hidrologia (a EA-LSTM, de Kratzert et al., 2019): o que muda todo dia é tratado de um jeito, e o que é fixo, de outro.
 
-## 4. Como o modelo funciona, passo a passo
+## 5. Como o modelo funciona, passo a passo
 
 ```
 1. Pega os últimos 30 dias de clima do município
@@ -111,7 +188,7 @@ Como os desastres são raros, também usamos três técnicas para o modelo não 
 - **Peso de classes:** errar um dia com desastre pesa mais que errar um dia tranquilo.
 - **Focal loss:** uma forma de calcular o erro que dá mais atenção aos casos difíceis (Lin et al., 2017).
 
-## 5. Como medimos se o modelo é bom
+## 6. Como medimos se o modelo é bom
 
 Toda previsão cai em uma de quatro situações. A tabela que as organiza se chama **matriz de confusão**:
 
@@ -135,7 +212,7 @@ A partir dela calculamos as medidas:
 
 Como 97% dos dias não têm desastre, um "modelo" que **sempre** dissesse "sem desastre" teria 96,7% de acurácia, sem detectar nenhum desastre. Por isso, a acurácia precisa vir sempre junto da sensibilidade e da especificidade. Nossa meta foi justamente acertar pelo menos 50% de cada lado.
 
-## 6. Resultados: acurácia, precisão e as outras medidas
+## 7. Resultados: acurácia, precisão e as outras medidas
 
 ### Resultado final (teste, 2021 a 2024)
 
@@ -161,7 +238,7 @@ Além disso, existe uma troca inevitável: **para detectar mais desastres, é pr
 
 Nos dias de risco mais alto, a precisão melhora bastante: no nível "muito alto", **quase 1 em cada 5 dias teve desastre** (18,7%).
 
-## 7. Como funcionam os alertas
+## 8. Como funcionam os alertas
 
 ### Passo 1: comparar com o último ano
 
@@ -193,7 +270,7 @@ Por que fazer assim? Porque os registros de desastre ficaram 3 vezes mais freque
 
 Para o estado, o modelo combina as probabilidades dos 293 municípios e calcula a chance de **pelo menos 10 municípios** serem atingidos no mesmo período. Usamos 10 porque, com um corte menor, quase todo dia teria desastre em algum lugar de SC e o alerta perderia o sentido. O alerta estadual também compara a previsão com o último ano, do mesmo jeito que o municipal.
 
-## 8. Parâmetros que ajustamos e o que cada um trouxe
+## 9. Parâmetros que ajustamos e o que cada um trouxe
 
 Chegamos ao modelo final depois de cerca de 20 execuções. A cada uma, mudamos poucos parâmetros e comparamos o resultado. A tabela mostra a trajetória:
 
@@ -237,7 +314,7 @@ Todos ficam no topo do arquivo `src/modelo/modelo_lstm_desastres.py`, com coment
 
 **A principal lição dos ajustes:** mexer na rede neural (tamanho, regularização, arquitetura) mudou pouco o resultado. O que mais fez diferença foi **definir bem a pergunta** (prever 3 dias, evento estadual com 10 municípios) e **escolher bem os limiares de alerta**.
 
-## 9. Explicação dos gráficos
+## 10. Explicação dos gráficos
 
 Todos os gráficos estão em `docs/analises/graficos/`. Os de número 00 a 06 são gerados automaticamente a cada execução do modelo.
 
@@ -303,7 +380,7 @@ Todos os gráficos estão em `docs/analises/graficos/`. Os de número 00 a 06 s�
 
 **O que mostra:** a porcentagem de dias com desastre em cada fase do El Niño (La Niña, Neutro e El Niño), no período completo e separada por período.
 
-**Como ler:** as barras de La Niña (azul) e El Niño (vermelho) têm cerca do dobro da altura da fase Neutra (cinza). Ver a seção 10.
+**Como ler:** as barras de La Niña (azul) e El Niño (vermelho) têm cerca do dobro da altura da fase Neutra (cinza). Ver a seção 11.
 
 ### Gráfico: taxa de desastre por faixa de valor
 
@@ -341,7 +418,7 @@ Todos os gráficos estão em `docs/analises/graficos/`. Os de número 00 a 06 s�
 
 **Como ler:** mostra em que meses cada município costuma ter chuva extrema. Comparar com o mapa de desastres ajuda a ver onde os desastres acompanham a chuva e onde não acompanham.
 
-## 10. O que mais descobrimos sobre os desastres
+## 11. O que mais descobrimos sobre os desastres
 
 Além do modelo, fizemos análises estatísticas para entender os dados. Elas ajudam a explicar os resultados.
 
@@ -394,7 +471,7 @@ O **teste qui-quadrado** confirmou que a frequência de desastres depende da fas
 
 O verão concentra os desastres. Uma tabela simples com o risco de cada município em cada mês (a **climatologia**) separa os dias quase tão bem quanto a rede neural (AUC de 0,764, contra 0,747 do modelo).
 
-## 11. Limitações e próximos passos
+## 12. Limitações e próximos passos
 
 1. **O modelo não supera a climatologia.** A rede neural aprendeu, principalmente, onde e quando os desastres costumam ser registrados.
 2. **6 em cada 10 desastres acontecem com chuva normal**, provavelmente estiagens e registros não ligados à chuva do período.
@@ -406,7 +483,7 @@ O verão concentra os desastres. Uma tabela simples com o risco de cada municíp
 - **Separar os tipos de desastre.** A base S2iD da Defesa Civil classifica os registros (código COBRADE) em hidrológicos (enchentes, enxurradas, deslizamentos) e climatológicos (estiagem). Prever só os hidrológicos deve melhorar bastante o modelo.
 - **Usar previsão do tempo como entrada.** Quando a chuva extrema realmente acontece, o risco de desastre fica 6,7 vezes maior. Com uma previsão meteorológica, o modelo poderia antecipar essa chuva.
 
-## 12. Referências
+## 13. Referências
 
 As referências foram citadas a partir da literatura de referência da área; confira os dados completos antes de usar em trabalhos formais.
 
