@@ -1,0 +1,45 @@
+# Publica o mapa interativo (pasta visualizacao/) no GitHub Pages.
+# Roda a cada push na branch main que altere a pasta visualizacao/, ou
+# manualmente pela aba Actions. Requer, em Settings → Pages, a fonte
+# "GitHub Actions".
+name: Publicar visualização
+
+on:
+  push:
+    branches: [main]
+    paths: ["visualizacao/**", ".github/workflows/publicar-visualizacao.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.publicacao.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Separar os arquivos do site
+        run: |
+          mkdir -p _site
+          cp visualizacao/index.html _site/
+          cp -r visualizacao/site _site/
+          touch _site/.nojekyll
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: publicacao
+        uses: actions/deploy-pages@v4

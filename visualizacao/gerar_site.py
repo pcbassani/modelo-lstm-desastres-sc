@@ -3,17 +3,17 @@ Gera os dados do site (mapa interativo das previsões)
 ====================================================
 
 Junta a malha municipal do IBGE com as previsões do modelo no período de teste
-e grava dois arquivos JavaScript usados pela página docs/index.html:
+e grava dois arquivos JavaScript usados pela página visualizacao/index.html:
 
-  docs/site/mapa.js       contornos simplificados dos municípios de SC
-  docs/site/previsoes.js  comunicado, percentil e evento de cada município em
+  visualizacao/site/mapa.js       contornos simplificados dos municípios de SC
+  visualizacao/site/previsoes.js  comunicado, percentil e evento de cada município em
                           cada dia, mais o alerta estadual
 
-O site é estático: depois de gerado, basta publicar a pasta docs/ no GitHub
-Pages (ou abrir docs/index.html no navegador).
+O site é estático: depois de gerado, basta publicar a pasta visualizacao/ no GitHub
+Pages (ou abrir visualizacao/index.html no navegador).
 
 Para rodar, a partir da raiz do repositório (depois de rodar o modelo):
-    /usr/bin/python3 src/interface/gerar_site.py
+    /usr/bin/python3 visualizacao/gerar_site.py
 
 Dependência extra: pyshp (python3 -m pip install pyshp), para ler o shapefile.
 """
@@ -37,7 +37,7 @@ CAMINHO_SHAPEFILE = os.path.expanduser("~/Downloads/SC_Municipios_2025/SC_Munici
 PASTA_PREVISOES = "resultados_sc"
 
 # Pasta dos arquivos gerados para o site.
-PASTA_SITE = os.path.join("docs", "site")
+PASTA_SITE = os.path.join("visualizacao", "site")
 
 # Simplificação dos contornos, em graus (0,004° = cerca de 400 m). Valores
 # maiores deixam o arquivo menor e o mapa mais "quadrado". O shapefile

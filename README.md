@@ -45,7 +45,7 @@ O site **https://pcbassani.github.io/modelo-lstm-desastres-sc/** mostra as previ
 - o modo "acertos e erros", que mostra onde o alerta acertou, onde deu alarme falso e onde perdeu um desastre;
 - o alerta estadual do dia e o desempenho geral do modelo.
 
-O mapa mostra as previsões já feitas para o período de teste, não previsões para hoje.
+O mapa mostra as previsões já feitas para o período de teste, não previsões para hoje. O site e o código que gera os dados dele ficam na pasta [`visualizacao/`](visualizacao); a publicação é feita automaticamente pelo GitHub Actions (`.github/workflows/publicar-visualizacao.yml`) a cada alteração nessa pasta.
 
 ## Estrutura do repositório
 
@@ -56,15 +56,15 @@ O mapa mostra as previsões já feitas para o período de teste, não previsões
 │   ├── modelo/
 │   │   ├── modelo_lstm_desastres.py   # o modelo: treino, previsão, níveis de risco e comunicados
 │   │   └── graficos_previsoes.py      # gráficos das previsões (gerados a cada execução)
-│   ├── analises/
-│   │   ├── analises_limiares.py       # limiares de chuva a partir dos quais o risco dobra
-│   │   ├── importancia_variaveis.py   # testes estatísticos de importância das variáveis
-│   │   └── climatologia.py            # calendário de risco por município e mês
-│   └── interface/
-│       └── gerar_site.py              # gera os dados do mapa interativo
+│   └── analises/
+│       ├── analises_limiares.py       # limiares de chuva a partir dos quais o risco dobra
+│       ├── importancia_variaveis.py   # testes estatísticos de importância das variáveis
+│       └── climatologia.py            # calendário de risco por município e mês
+├── visualizacao/                      # o mapa interativo (site publicado no GitHub Pages)
+│   ├── index.html                     # a página do mapa
+│   ├── site/                          # contornos dos municípios e previsões usados pelo mapa
+│   └── gerar_site.py                  # gera os dados do mapa a partir das previsões
 └── docs/
-    ├── index.html                     # o mapa interativo (página do GitHub Pages)
-    ├── site/                          # contornos dos municípios e previsões usados pelo mapa
     ├── analises/
     │   └── graficos/                  # gráficos em PNG das previsões e das análises
     └── relatorios/
@@ -118,10 +118,10 @@ python3 src/modelo/graficos_previsoes.py
 Refaz os gráficos a partir das previsões já salvas, sem treinar de novo.
 
 ```bash
-python3 src/interface/gerar_site.py
+python3 visualizacao/gerar_site.py
 ```
 
-Atualiza os dados do mapa interativo (`docs/site/`) com as previsões salvas. Precisa do shapefile do IBGE (`SC_Municipios_2025.shp`); o caminho fica no parâmetro `CAMINHO_SHAPEFILE`, no topo do script. Para ver o mapa no próprio computador, rode `python3 -m http.server --directory docs` e abra http://localhost:8000.
+Atualiza os dados do mapa interativo (`visualizacao/site/`) com as previsões salvas. Precisa do shapefile do IBGE (`SC_Municipios_2025.shp`); o caminho fica no parâmetro `CAMINHO_SHAPEFILE`, no topo do script. Para ver o mapa no próprio computador, rode `python3 -m http.server --directory visualizacao` e abra http://localhost:8000.
 
 ```bash
 python3 src/analises/analises_limiares.py
