@@ -22,7 +22,7 @@ Resultados em resultados_sc/climatologia/:
   - perfil_mensal_sc.png          : taxa por mês no estado, treino x teste.
 
 Para rodar:
-    /usr/bin/python3 climatologia.py
+    /usr/bin/python3 src/analises/climatologia.py   (a partir da raiz do repositório)
 """
 
 import os
@@ -38,7 +38,9 @@ import pandas as pd
 from scipy.stats import chi2_contingency
 from sklearn.metrics import roc_auc_score
 
-import modelo_lstm_desastres as m
+# O modelo fica em src/modelo: essa pasta entra no caminho de importação
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "modelo"))
+import modelo_lstm_desastres as m  # noqa: E402
 
 # #############################################################################
 # ##                        PARÂMETROS AJUSTÁVEIS                            ##

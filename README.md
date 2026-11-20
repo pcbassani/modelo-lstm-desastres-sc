@@ -20,12 +20,16 @@ Cada previsão também recebe um nível de risco e um comunicado:
 ## Estrutura
 
 ```
-src/modelo/
-├── modelo_lstm_desastres.py   # modelo LSTM: treino, avaliação, níveis de risco e comunicados
-├── analise_limiares.py        # limiares de chuva a partir dos quais o risco de desastre dobra
-├── importancia_variaveis.py   # testes estatísticos: qual variável pesa mais (logística multivariada)
-└── climatologia.py            # calendário de risco por município e mês
+src/
+├── modelo/
+│   └── modelo_lstm_desastres.py   # modelo LSTM: treino, avaliação, níveis de risco e comunicados
+└── analises/
+    ├── analise_limiares.py        # limiares de chuva a partir dos quais o risco de desastre dobra
+    ├── importancia_variaveis.py   # testes estatísticos: qual variável pesa mais (logística multivariada)
+    └── climatologia.py            # calendário de risco por município e mês
 ```
+
+As análises reaproveitam a leitura de dados e os parâmetros do modelo em `src/modelo/`.
 
 ## Como rodar
 
@@ -44,6 +48,14 @@ src/modelo/
    ```
 
    O modelo pede o arquivo do ONI no terminal: arraste o arquivo para a janela ou aperte Enter para baixá-lo da NOAA.
+
+   As análises rodam da mesma forma, também a partir da raiz:
+
+   ```bash
+   python3 src/analises/analise_limiares.py
+   python3 src/analises/importancia_variaveis.py
+   python3 src/analises/climatologia.py
+   ```
 
 Os parâmetros ajustáveis ficam no topo de cada script, com comentários explicando o que cada um faz. As saídas são criadas em `resultados_sc/` (tabelas, gráficos e modelo treinado) e `analises_anteriores/` (a saída completa do terminal de cada execução).
 

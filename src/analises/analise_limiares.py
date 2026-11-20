@@ -24,7 +24,7 @@ analisado é o mesmo alvo do modelo: desastre em algum dos próximos
 HORIZONTE_PREVISAO dias.
 
 Para rodar:
-    /usr/bin/python3 analise_limiares.py
+    /usr/bin/python3 src/analises/analise_limiares.py   (a partir da raiz do repositório)
 """
 
 import os
@@ -41,7 +41,9 @@ from scipy.stats import mannwhitneyu
 from sklearn.metrics import roc_auc_score
 from sklearn.tree import DecisionTreeClassifier, export_text
 
-import modelo_lstm_desastres as m
+# O modelo fica em src/modelo: essa pasta entra no caminho de importação
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "modelo"))
+import modelo_lstm_desastres as m  # noqa: E402
 
 # #############################################################################
 # ##                        PARÂMETROS AJUSTÁVEIS                            ##
